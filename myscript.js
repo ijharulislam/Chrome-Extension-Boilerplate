@@ -171,7 +171,6 @@ function parseRecommendations(user, headers){
                 recommender = getRecomendor(jsonData, recommender)
                 recommender["Recommendation Text"] = recommendationText
                 profile[0]['Recommendations'].push(recommender)
-                console.log(recommender)
             }
         }
       }
@@ -242,7 +241,6 @@ function parseContacts(user, headers){
 
 function parseConnections(url, count, headers){
     count = Math.round(Number(count/10))
-    console.log("Count", count)
     var i = 1;
 
     function getConnections() {
@@ -268,6 +266,7 @@ function parseConnections(url, count, headers){
                                     "Occupation": occupation,
                                     "Id": linkedinId
                                 }
+                                console.log("Connection", connectionData)
                                 profile[0]["Connections"].push(connectionData)
                             }  
                         }
@@ -324,7 +323,6 @@ function startCrawling() {
     };
     profile.push(profileData)
     csrftoken = getCookie("JSESSIONID");
-    console.log(csrftoken)
 
     var headers = {
         'authority':'www.linkedin.com',
@@ -361,6 +359,7 @@ function startCrawling() {
                                 "Field Of Study": fieldOfStudy,
                                 "Time Period": educationTimePeriod
                             }
+                            console.log("Education", educationData)
                             profile[0]["Educations"].push(educationData)
 
                         }
@@ -379,6 +378,7 @@ function startCrawling() {
                                 "Description": description,
                                 "Time Period": experienceTimePeriod
                             }
+                            console.log("Education", experiencData)
                             profile[0]["Experiences"].push(experiencData)
                         }
 
@@ -416,6 +416,7 @@ chrome.runtime.onMessage.addListener(
     if (request.msg == "start") {
         isRunning = true;
         isFinished = false;
+        profile = [];
         startCrawling()
     }
 });
