@@ -1,8 +1,6 @@
 var isRunning = false;
 var isFinished = false;
-
 var userName = null;
-
 var profile = [];
 
 function getCookie(name) {
@@ -24,7 +22,6 @@ function updateProgressbar(){
     var port = chrome.runtime.connect({name:"progressbar"});
     port.postMessage({msg: "progress", isRunning:isRunning, isFinished:isFinished});
 }
-
 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
@@ -389,7 +386,7 @@ function startCrawling() {
                                 "Description": description,
                                 "Time Period": experienceTimePeriod
                             }
-                            console.log("Education", experiencData)
+                            console.log("Experience", experiencData)
                             profile[0]["Experiences"].push(experiencData)
                         }
 
