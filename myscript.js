@@ -415,9 +415,10 @@ function startCrawling() {
     parseContacts(user, headers);
     parseRecommendations(user, headers);
     parseInterests(user, headers);
-    parseConnections(connectionUrl, totalConnections, headers);
-    
-    if(!connectionUrl){
+
+    if(connectionUrl){
+        parseConnections(connectionUrl, totalConnections, headers);
+    } else {
         setTimeout(function(){ 
             var filename = userName+'.csv';
             exportCSV(profile, filename);
@@ -433,7 +434,7 @@ function startCrawling() {
             })
             isFinished= true;
             isRunning = false;
-        }, 40000);
+        }, 20000);
     }
 }
 
