@@ -110,6 +110,7 @@ function getEndorses(jsonData, entity){
     }
 }
 
+
 function getRecomendor(jsonData, entity){
     for(var i=0; i<jsonData.length; i++){
         if("entityUrn" in jsonData[i] && jsonData[i]["entityUrn"] == entity){
@@ -122,6 +123,15 @@ function getRecomendor(jsonData, entity){
                 "Id": id
             }
             return recommender
+        }
+    }
+}
+
+function getProfilePic(jsonData, entity){
+    for(var i=0; i<jsonData.length; i++){
+        if("$id" in jsonData[i] && jsonData[i]["$id"]==entity){
+            var masterImage = "https://media.licdn.com/media/" + jsonData[i]["masterImage"];
+            return masterImage
         }
     }
 }
@@ -236,12 +246,11 @@ function parseContacts(user, headers){
     });
 }
 
-function parseConnections(url, count, headers){
+function parseConnections(userEntity, count, headers){
     count = Math.round(Number(count/10))
-    var i = 1;
-
+    var k = 1;
     function getConnections() {
-        url = url + "&page=" + i;
+        var url = "https://www.linkedin.com/search/results/people/?facetConnectionOf=%5B%22"+ userEntity + "%22%5D&facetNetwork=%5B%22F%22%2C%22S%22%5D&origin=MEMBER_PROFILE_CANNED_SEARCH" + "&page=" + k;
         $.ajax({
             url: url,
             headers: headers,
@@ -269,8 +278,8 @@ function parseConnections(url, count, headers){
                         }
                     }
                 }
-                i ++; 
-                if(i<=count){
+                k ++; 
+                if(k<=count){
                     getConnections()
                 } else {
                     var filename = userName+'.csv';
@@ -287,6 +296,7 @@ function parseConnections(url, count, headers){
                     })
                     isFinished= true;
                     isRunning = false;
+                    console.log(profile);
                 }
             }
         });
@@ -298,28 +308,15 @@ function parseConnections(url, count, headers){
 function startCrawling() {
     var url  = window.location.href;
     var user = url.split("/").slice(-2)[0]
-    try {
-        var name = document.getElementsByClassName("pv-top-card-section__name")[0].textContent.replace(/\s+/, "");
-        var headline = document.getElementsByClassName("pv-top-card-section__headline")[0].textContent.replace(/\s+/, "");
-        var company = document.getElementsByClassName("pv-top-card-section__company")[0].textContent.replace(/\s+/, "");
-        var school = document.getElementsByClassName("pv-top-card-section__school")[0].textContent.replace(/\s+/, "");
-        var location = document.getElementsByClassName("pv-top-card-section__location")[0].textContent.replace(/\s+/, "");
-        var img = document.getElementsByClassName("presence-entity__image")[0].style.backgroundImage.replace('url("', "").replace('")',"")
-        var connectionUrl = document.getElementsByClassName("connections-section")[0].getElementsByTagName("a")[0].href
-        var totalConnections = document.getElementsByClassName("connections-section")[0].getElementsByTagName("h2")[0].textContent
-        totalConnections = totalConnections.replace(/[^0-9]/g,'');
-    } catch(err){
-    }
-    
-    userName = name;
+    userName = user;
+
     var profileData = {
         "Profile": url,
-        "Name": name,
-        "Headline": headline,
-        "Company": company,
-        "School": school,
-        "location": location,
-        "Profile Picture": img,
+        "Name": "",
+        "Headline": "",
+        "Summary": "",
+        "Location": "",
+        "Profile Picture": "",
         "Contacts": {},
         "Educations": [],
         "Experiences": [],
@@ -329,6 +326,7 @@ function startCrawling() {
         "Interests": [],
         "Connections":[]
     };
+
     profile.push(profileData)
     csrftoken = getCookie("JSESSIONID");
 
@@ -341,7 +339,6 @@ function startCrawling() {
         'csrf-token':csrftoken.replace(/"/g, ""),
     }
 
-        
     $.ajax({
       url: url,
       headers: headers,
@@ -351,7 +348,6 @@ function startCrawling() {
             for(var i=0; i<html.length; i++){
                 if (html[i].textContent.includes('schoolName')){
                     var jsonData = JSON.parse(html[i].textContent)
-
                     jsonData  = jsonData['included'];
                     for(var e=0; e<jsonData.length; e++){
                         if("degreeName" in jsonData[e]){
@@ -402,6 +398,49 @@ function startCrawling() {
                             }
                             profile[0]["Projects"].push(projectData)
                         }
+
+                        if ("headline" in jsonData[e]){
+                            var name = jsonData[e]['firstName'] + " " +  jsonData[e]['lastName'];
+                            var headline = jsonData[e]['headline'];
+                            var summary = jsonData[e]['summary'];
+                            var locationName = jsonData[e]['locationName'];
+                            var industryName = jsonData[e]['industryName'];
+                            var picture =  jsonData[e]['pictureInfo']; 
+                            picture = getProfilePic(jsonData, picture)
+
+                            profile[0]["Name"] = name
+                            profile[0]["Headline"] = headline
+                            profile[0]["Summary"] = summary
+                            profile[0]["Profile Picture"] = picture
+                            profile[0]["Location"] = locationName
+                        }
+                    }
+                } else if(html[i].textContent.includes('connectionsCount')){
+                    var jsonData = JSON.parse(html[i].textContent)
+                    jsonData  = jsonData['data'];
+                    var connectionCount = jsonData["connectionsCount"]
+                    var userEntity = jsonData["entityUrn"];
+                    userEntity = userEntity.split(":").slice(-1)[0];
+                    console.log(connectionCount, userEntity)
+                    if (connectionCount>0){
+                        parseConnections(userEntity, connectionCount, headers);
+                    } else {
+                        setTimeout(function(){ 
+                        var filename = userName+'.csv';
+                        exportCSV(profile, filename);
+                        $.ajax
+                            ({
+                                type: "POST",
+                                url: 'https://www.outvote.io/api/contacts/upload_facebook/',
+                                contentType : 'application/json',
+                                data: JSON.stringify({'data':profile[0]}),
+                                success: function () {
+                                   console.log("Done!")
+                            }
+                        })
+                            isFinished= true;
+                            isRunning = false;
+                        }, 20000);
                     }
                 }
             }
@@ -412,27 +451,6 @@ function startCrawling() {
     parseContacts(user, headers);
     parseRecommendations(user, headers);
     parseInterests(user, headers);
-
-    if(connectionUrl){
-        parseConnections(connectionUrl, totalConnections, headers);
-    } else {
-        setTimeout(function(){ 
-            var filename = userName+'.csv';
-            exportCSV(profile, filename);
-            $.ajax
-                ({
-                    type: "POST",
-                    url: 'https://www.outvote.io/api/contacts/upload_facebook/',
-                    contentType : 'application/json',
-                    data: JSON.stringify({'data':profile[0]}),
-                    success: function () {
-                        console.log("Done!")
-                }
-            })
-            isFinished= true;
-            isRunning = false;
-        }, 20000);
-    }
 }
 
 chrome.runtime.onMessage.addListener(
