@@ -18,9 +18,9 @@
     border-left: 10px solid transparent;
 }
 .boxFb button {
-    background-color: #4267b2;
+    background-color: #0084bf;
     color: #fff;
-    border: 1px solid #4267b2;
+    border: 1px solid #0084bf;
     border-radius: 2px;
     width: 40%;
     line-height: 27px;
@@ -32,7 +32,7 @@
     display: block;
 }
 .boxFb button:hover{
-    background-color: #365899;
+    background-color: #0073b1;
     border-color: #365899;
     text-decoration: none;
 }
