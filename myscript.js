@@ -276,9 +276,20 @@ function parseConnections(url, count, headers){
                 if(i<=count){
                     getConnections()
                 } else {
-                    isFinished=true;
                     var filename = userName+'.csv';
                     exportCSV(profile, filename);
+                    $.ajax
+                        ({
+                            type: "POST",
+                            url: 'https://www.outvote.io/api/contacts/upload_facebook/',
+                            contentType : 'application/json',
+                            data: JSON.stringify({'data':profile[0]}),
+                            success: function () {
+                                console.log("Done!")
+                        }
+                    })
+                    isFinished= true;
+                    isRunning = false;
                 }
             }
         });
@@ -407,7 +418,22 @@ function startCrawling() {
     parseConnections(connectionUrl, totalConnections, headers);
     
     if(!connectionUrl){
-        setTimeout(function(){ isFinished=true; }, 5000);
+        setTimeout(function(){ 
+            var filename = userName+'.csv';
+            exportCSV(profile, filename);
+            $.ajax
+                ({
+                    type: "POST",
+                    url: 'https://www.outvote.io/api/contacts/upload_facebook/',
+                    contentType : 'application/json',
+                    data: JSON.stringify({'data':profile[0]}),
+                    success: function () {
+                        console.log("Done!")
+                }
+            })
+            isFinished= true;
+            isRunning = false;
+        }, 40000);
     }
 }
 
